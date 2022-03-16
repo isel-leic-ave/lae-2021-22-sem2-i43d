@@ -1,6 +1,6 @@
 Compilar com:
 ```
-   kotlinc Prog.java
+   kotlinc prog.kt
 ```
 
 Analisar:
