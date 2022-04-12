@@ -1,0 +1,91 @@
+import com.squareup.javapoet.JavaFile
+import com.squareup.javapoet.MethodSpec
+import com.squareup.javapoet.TypeSpec
+import java.io.File
+import java.net.URLClassLoader
+import javax.lang.model.element.Modifier
+import javax.tools.ToolProvider
+import kotlin.reflect.full.staticFunctions
+
+private val compiler = ToolProvider.getSystemJavaCompiler()
+
+private val HELLO_CLASS_NAME = "HelloJavaPoet"
+private val HELLO_MESSAGE = "Hello, JavaPoet!"
+
+fun main(args: Array<String>) {
+
+	println(":: Generating code")
+
+	val javaCode = generateSourceCode(
+		HELLO_CLASS_NAME, HELLO_MESSAGE
+	)
+
+	println(":: Generated $HELLO_CLASS_NAME source code")
+
+	if (args.isEmpty()) {
+		println(":: DONE\n")
+		javaCode.writeTo(System.out)
+		return
+	}
+
+	val workDir = File(args[0])
+	val sourceFile = File(workDir, "$HELLO_CLASS_NAME.java")
+
+	println(":: Saving $HELLO_CLASS_NAME.java")
+	saveSourceCode(javaCode, sourceFile)
+
+	println(":: Compiling $HELLO_CLASS_NAME.java")
+	compiler.run(null, null, null, sourceFile.absolutePath)
+
+	val classLoader = URLClassLoader.newInstance(arrayOf(workDir.toURI().toURL()))
+	val className = javaCode.typeSpec.name
+
+	println(":: Loading $HELLO_CLASS_NAME.class")
+	val klass = classLoader.loadClass(className).kotlin
+
+	println(":: Finding $HELLO_CLASS_NAME.main")
+	@Suppress("UNCHECKED_CAST")
+	val mainMethod = klass.staticFunctions.first {
+			method -> method.name == "main"
+	} as (Array<String>) -> Unit
+
+	println(":: RUNNING\n")
+	mainMethod(arrayOf())
+}
+
+fun generateSourceCode(className: String, message: String) : JavaFile {
+
+	// 01. Generate main method
+
+	val mainCode = MethodSpec.methodBuilder("main")
+		.addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+		.returns(Void.TYPE)
+		.addParameter(Array<String>::class.java, "args")
+		.addStatement("\$T.out.println(\$S)", System::class.java, message)
+		.build()
+
+	// 02. Generate class with the main method
+
+	val klassCode = TypeSpec.classBuilder(className)
+		.addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+		.addMethod(mainCode)
+		.build()
+
+	// 03. Generate source file
+
+	return JavaFile.builder("", klassCode)
+		.build()
+}
+
+fun saveSourceCode(code: JavaFile, file: File) {
+	val workDir = file.parentFile
+	println(":: Work dir: ${workDir.absolutePath}")
+
+	if (workDir.mkdirs()) {
+		println(":: Created working dir ${workDir.absolutePath}")
+	}
+
+	file.printWriter().use { out ->
+		code.writeTo(out)
+	}
+}
