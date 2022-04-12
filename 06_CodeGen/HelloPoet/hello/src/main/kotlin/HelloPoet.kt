@@ -14,6 +14,11 @@ private val HELLO_MESSAGE = "Hello, JavaPoet!"
 
 fun main(args: Array<String>) {
 
+	//////////////////////////////////
+	//
+	// STEP 1 : Generate source code
+	//
+
 	println(":: Generating code")
 
 	val javaCode = generateSourceCode(
@@ -21,6 +26,12 @@ fun main(args: Array<String>) {
 	)
 
 	println(":: Generated $HELLO_CLASS_NAME source code")
+
+	//////////////////////////////////
+	//
+	// STEP 2 : Save source code to file
+	// (if a working dir has been provided)
+	//
 
 	if (args.isEmpty()) {
 		println(":: DONE\n")
@@ -34,14 +45,29 @@ fun main(args: Array<String>) {
 	println(":: Saving $HELLO_CLASS_NAME.java")
 	saveSourceCode(javaCode, sourceFile)
 
+	//////////////////////////////////
+	//
+	// STEP 3 : Compile source code
+	//
+
 	println(":: Compiling $HELLO_CLASS_NAME.java")
 	compiler.run(null, null, null, sourceFile.absolutePath)
+
+    //////////////////////////////////
+    //
+    // STEP 4 : Load the new class
+    //
 
 	val classLoader = URLClassLoader.newInstance(arrayOf(workDir.toURI().toURL()))
 	val className = javaCode.typeSpec.name
 
 	println(":: Loading $HELLO_CLASS_NAME.class")
 	val klass = classLoader.loadClass(className).kotlin
+
+	//////////////////////////////////
+	//
+	// STEP 5 : RUN
+	//
 
 	println(":: Finding $HELLO_CLASS_NAME.main")
 	@Suppress("UNCHECKED_CAST")
