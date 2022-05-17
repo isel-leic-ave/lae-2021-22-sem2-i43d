@@ -13,6 +13,7 @@ open class C : B()
 class ProdCons<in I : Any, out O : Any>(
 		private val transformer: (i : I) -> O
 	) : Consumer<I>, Producer<O> {
+
     private lateinit var obj: O
 
     override fun digest(iobj: I) {
@@ -27,7 +28,7 @@ class ProdCons<in I : Any, out O : Any>(
 
 fun main() {
     //val pc = ProdCons<B,B> { b : B -> b }
-		val pc : ProdCons<C,A> = ProdCons<A,C> { _ : A -> C() }
+    val pc : ProdCons<C,A> = ProdCons<A,C> { _ : A -> C() }
     pc.digest(C())
     val value : A = pc.invent()
     println(value)

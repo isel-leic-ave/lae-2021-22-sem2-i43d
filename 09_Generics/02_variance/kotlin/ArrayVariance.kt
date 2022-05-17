@@ -3,7 +3,7 @@ import kotlin.reflect.full.*
 
 open class A
 open class B : A()
-open class C :  B()
+open class C : B()
 
 /*
 fun processAs(aas: Array<A>): Int {
@@ -19,7 +19,7 @@ fun <T : A> processAs(aas: Array<T>): Int {
     var count = 0
     for (i in aas.indices) {
         count += 1
-				aas[i] = A()
+        aas[i] = A()
     }
     return count
 }
@@ -29,7 +29,7 @@ inline fun <reified T : A> processAs(aas: Array<T>): Int {
     var count = 0
     for (i in aas.indices) {
         count += 1
-				aas[i] = T::class.createInstance()
+        aas[i] = T::class.createInstance()
     }
     return count
 }
@@ -44,14 +44,14 @@ fun processCs(acs: Array<C>): Int {
 
 fun main() {
     val bs = arrayOf(B(), B(), B(), C())
-		println(bs[3]::class)
-		
+    println(bs[3]::class)
+
     val na = processAs(bs)
-    //int nc = processCs(bs);
+    //val nc = processCs(bs)
 
     println(na)
-    //System.out.println(nc);
-
-		println(bs[3]::class)
+    //println(nc)
+		
+    println(bs[3]::class)
 }
 
