@@ -1,3 +1,11 @@
+
+fun <T> Iterable<T>.inspect(inspector: (T) -> Unit) : Iterable<T> {
+	for (item in this) {
+		inspector(item)
+	}
+	return this
+}
+
 fun <T> Iterable<T>.where(predicate : (T) -> Boolean) : Iterable<T> {
 	val res = mutableListOf<T>()
 	for (item in this) {
@@ -35,11 +43,13 @@ fun main() {
 		Person(13000, "Vasco da Gama", 1469),
 		Person(14000, "Luís de Camões", 1524),
 		Person(15000, "Josefa de Óbidos", 1630),
+		Person(16000, "Fernando Pessoa", 1888)
 	)
 
 	/*
 	val outputData =
 		inputData
+			.onEach { println(">> $it") }
 			.filter { it.birthYear > 1500 }
 			.map { it.name }
 			.find { it[0] == 'L' }
@@ -47,6 +57,7 @@ fun main() {
 	
 	val outputData =
 		inputData
+			.inspect { println(">> $it") }
 			.where { it.birthYear > 1500 }
 			.select { it.name }
 			.lookup { it[0] == 'L' }

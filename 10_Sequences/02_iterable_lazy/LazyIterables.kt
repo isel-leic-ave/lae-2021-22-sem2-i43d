@@ -1,11 +1,12 @@
+
 fun <T> Iterable<T>.inspect(inspector: (T) -> Unit) : Iterable<T> {
 	return object : Iterable<T> {
 		override fun iterator() : Iterator<T> {
-			val input : Iterator<T> = this@inspect.iterator()
+			val source = this@inspect.iterator()
 			return object : Iterator<T> {
-				override fun hasNext() : Boolean = input.hasNext()
+				override fun hasNext() : Boolean = source.hasNext()
 				override fun next() : T {
-					val item = input.next()
+					val item = source.next()
 					inspector(item)
 					return item
 				}
@@ -14,30 +15,46 @@ fun <T> Iterable<T>.inspect(inspector: (T) -> Unit) : Iterable<T> {
 	}
 }
 
+private enum class WhereIterableState {
+	UNKNOWN, ITEM_FOUND, NO_MORE_ITEMS
+}
+
 fun <T> Iterable<T>.where(predicate : (T) -> Boolean) : Iterable<T> {
 	return object : Iterable<T> {
 		override fun iterator() : Iterator<T> {
-			val input : Iterator<T> = this@where.iterator()
+			val source = this@where.iterator()
 			return object : Iterator<T> {
-				private var curr = advance()
+				private var state = WhereIterableState.UNKNOWN
+				private var curr : T? = null
 				
-				override fun hasNext() : Boolean = curr != null
+				override fun hasNext() : Boolean =
+					updatedState() == WhereIterableState.ITEM_FOUND
 				
 				override fun next() : T {
+					if (updatedState() == WhereIterableState.NO_MORE_ITEMS) {
+						throw Exception("No more items")
+					}
 					val res = curr
-					if (res == null) throw Exception("No more elements")
-					curr = advance()
-					return res
+
+					curr = null
+					state = WhereIterableState.UNKNOWN
+
+					return res ?: throw Exception("Invalid state")
 				}
 				
-				private fun advance() : T? {
-					while (input.hasNext()) {
-						val item = input.next()
-						if (predicate(item)) {
-							return item
+				private fun updatedState() : WhereIterableState {
+					if (state == WhereIterableState.UNKNOWN) {
+						state = WhereIterableState.NO_MORE_ITEMS
+						while (source.hasNext()) {
+							val item = source.next()
+							if (predicate(item)) {
+								curr = item
+								state = WhereIterableState.ITEM_FOUND
+								break
+							}
 						}
 					}
-					return null
+					return state
 				}
 			}
 		}
@@ -47,10 +64,10 @@ fun <T> Iterable<T>.where(predicate : (T) -> Boolean) : Iterable<T> {
 fun <T,R> Iterable<T>.select(mapper: (T) -> R) : Iterable<R> {
 	return object : Iterable<R> {
 		override fun iterator() : Iterator<R> {
-			val input : Iterator<T> = this@select.iterator()
+			val source = this@select.iterator()
 			return object : Iterator<R> {
-				override fun hasNext() : Boolean = input.hasNext()
-				override fun next() : R = mapper(input.next())
+				override fun hasNext() : Boolean = source.hasNext()
+				override fun next() : R = mapper(source.next())
 			}
 		}
 	}
@@ -71,16 +88,17 @@ fun main() {
 	val inputData = listOf(
 		Person(10000, "Afonso Henriques", 1109),
 		Person(11000, "Inês de Castro", 1325),
-		Person(12000, "Nuno Álvares Pereira", 1360),
 		Person(14000, "Luís de Camões", 1524),
+		Person(12000, "Nuno Álvares Pereira", 1360),
 		Person(13000, "Vasco da Gama", 1469),
-		Person(16000, "Fernando Pessoa", 1888),
 		Person(15000, "Josefa de Óbidos", 1630),
+		Person(16000, "Fernando Pessoa", 1888),
 	)
 
 	/*
 	val outputData =
 		inputData
+			.onEach { println(">> $it") }
 			.filter { it.birthYear > 1500 }
 			.map { it.name }
 			.find { it[0] == 'L' }
@@ -89,9 +107,9 @@ fun main() {
 	val outputData =
 		inputData
 			.inspect { println(">> $it") }
-			.where { it.birthYear > 1500 }
-			.select { it.name }
-			.lookup { it[0] == 'L' }
+			.where   { it.birthYear > 1500 }
+			.select  { it.name }
+			.lookup  { it[0] == 'L' }
 	
 	println(outputData)
 }
